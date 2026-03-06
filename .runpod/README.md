@@ -1,81 +1,69 @@
-# Wan2.1 Remix Image-to-Video - Serverless Worker
+# Wan 2.2 I2V Remix - Serverless Worker
 
-This repository contains the configuration to deploy the **Wan2.1 Remix Image-to-Video (I2V)** workflow as a Serverless Endpoint on **RunPod**, including all necessary custom nodes (WanVideoWrapper) and models.
+This worker integrates the Wan 2.2 I2V Remix workflow into RunPod Serverless using a fixed request contract and image-only output.
 
-## Deployment Method: GitHub + Dockerfile
+## Deployment Method: RunPod GitHub + Dockerfile
 
-We rely on RunPod's **Dockerfile** build system. The repository includes a `Dockerfile` that:
-1.  Extends the base ComfyUI image.
-2.  Installs the required Custom Nodes (`ComfyUI-WanVideoWrapper`, `comfyui-kjnodes`, etc.).
-3.  **Downloads all necessary models** (Wan2.2 Checkpoints, LoRAs, VAE, UMT5) directly into the image.
+Use RunPod's GitHub integration to build directly from this repository.
 
-### Steps to Deploy
+### Steps
 
-1.  **Push this repository to GitHub** (Private or Public).
-2.  Go to the [RunPod Console](https://www.runpod.io/console/serverless).
-3.  Click **New Endpoint**.
-4.  **Connect your GitHub Repository**.
-5.  **Build Method**: Select **Dockerfile**.
-6.  **GPU Configuration**: Select **H100 80GB** (Recommended for Wan2.1 14B).
-7.  **Environment Variables** (Optional, for tuning):
-    - `COMFY_POLLING_MAX_RETRIES`: `2000` (Increase wait time for cold starts)
-    - `COMFY_POLLING_INTERVAL_MS`: `500`
-8.  **Deploy**.
-    > **Note**: The first build/start will take significant time (10-15 minutes) as it downloads ~20GB of models into the container image.
-
----
+1. Push this repository to GitHub.
+2. In RunPod, create a new serverless endpoint from GitHub repo.
+3. Set build inputs:
+   - Context path: `/`
+   - Dockerfile path: `Dockerfile`
+4. Use H100/H200 class GPU with 1 GPU per worker.
+5. Set required env vars:
+   - `COMFY_POLLING_MAX_RETRIES=2000`
+   - `COMFY_POLLING_INTERVAL_MS=500`
+   - `COMFY_HOST=127.0.0.1:8188`
+6. Attach network storage if using persistent model volume strategy.
+7. Deploy and wait for first build/start completion.
 
 ## API Usage
 
-The worker uses a custom `handler.py` that simplifies the input. You do **not** need to send the full workflow JSON every time.
+### Request
 
-### Endpoint Input
+POST `https://api.runpod.ai/v2/<endpoint_id>/run`
 
-**POST** to your RunPod Serverless URL (e.g., `https://api.runpod.ai/v2/<endpoint_id>/run`)
+Headers:
+- `Authorization: Bearer <RUNPOD_API_KEY>`
+- `Content-Type: application/json`
 
-**Headers**:
-- `Authorization`: `Bearer <YOUR_RUNPOD_KEY>`
-
-**Body**:
+Body:
 ```json
 {
   "input": {
-    "start_image_base64": "<BASE64_STRING_OF_START_IMAGE>",
-    "end_image_base64": "<BASE64_STRING_OF_END_IMAGE>",
-    "steps": 25,
-    "resolution": 720
+    "start_image": "<BASE64_STRING>",
+    "end_image": "<BASE64_STRING>",
+    "steps": 8,
+    "width": 832,
+    "height": 480,
+    "model": "high",
+    "seed": 12345
   }
 }
 ```
 
-### Parameters
-
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `start_image_base64` | String | **Required** | Base64 encoded string of the starting image (PNG/JPG). |
-| `end_image_base64` | String | **Required** | Base64 encoded string of the ending image (PNG/JPG). |
-| `steps` | Integer | `25` | Number of sampling steps. |
-| `resolution` | Integer | `720` | Vertical resolution of the output video. |
-
 ### Response
 
-The response follows the standard RunPod Serverless format.
+RunPod wraps handler output. On success, the handler output is:
 
 ```json
 {
-  "id": "<JOB_ID>",
-  "status": "COMPLETED",
-  "output": "<BASE64_VIDEO_STRING>"
+  "image": "<BASE64_IMAGE_STRING>"
 }
 ```
 
-If the status is `IN_PROGRESS`, you must poll the status endpoint (`/status/<JOB_ID>`) until it completes.
+Error behavior:
+- `400`: invalid base64 or invalid optional params
+- `422`: missing required fields
+- `500`: execution/inference failure
 
----
+## Key Files
 
-## Local Development / Files
-
-- **`Dockerfile`**: Defines the build environment and model downloads.
-- **`handler.py`**: The Python script that processes requests, updates the workflow, and interacts with ComfyUI.
-- **`workflow_runpod.json`**: The base API-format workflow used as a template.
-- **`runpod.yaml`**: Configuration file linking the handler.
+- `Dockerfile`
+- `handler.py`
+- `workflow_runpod.json`
+- `runpod.yaml`

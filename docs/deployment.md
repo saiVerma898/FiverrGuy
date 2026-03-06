@@ -2,6 +2,30 @@
 
 This guide explains how to deploy the `worker-comfyui` as a serverless endpoint on RunPod, covering both pre-built official images and custom-built images.
 
+## Project-Specific Quick Path (Wan 2.2 I2V Remix)
+
+For this repository, use **RunPod GitHub integration** (no local Docker required):
+
+1. Push your branch to GitHub.
+2. In RunPod, create/update endpoint from GitHub repo.
+3. Configure:
+   - Context path: `/`
+   - Dockerfile path: `Dockerfile`
+   - GPU: H100/H200 class
+   - GPUs/worker: `1`
+4. Set env vars:
+   - `COMFY_HOST=127.0.0.1:8188`
+   - `COMFY_POLLING_MAX_RETRIES=2000`
+   - `COMFY_POLLING_INTERVAL_MS=500`
+5. Attach network volume if models are stored on persistent storage.
+6. Deploy and wait for first cold build completion.
+
+After deployment, validate with:
+
+- `POST https://api.runpod.ai/v2/<endpoint-id>/run`
+- Body shape from `postman_example.json`
+- Success output contains base64 image under `output.image`
+
 ## Deploying Pre-Built Official Images
 
 This is the simplest method if the official images meet your needs.

@@ -22,6 +22,8 @@ This document outlines the environment variables available for configuring the `
 | `WEBSOCKET_RECONNECT_ATTEMPTS` | Number of websocket reconnection attempts when connection drops during job execution.                                  | `5`     |
 | `WEBSOCKET_RECONNECT_DELAY_S`  | Delay in seconds between websocket reconnection attempts.                                                              | `3`     |
 | `WEBSOCKET_TRACE`              | Enable low-level websocket frame tracing for protocol debugging. Set to `true` only when diagnosing connection issues. | `false` |
+| `COMFY_POLLING_MAX_RETRIES`    | Maximum number of retries while waiting for ComfyUI API readiness/completion in serverless runs.                      | `2000`  |
+| `COMFY_POLLING_INTERVAL_MS`    | Delay between polling attempts in milliseconds.                                                                        | `500`   |
 
 > [!TIP] > **For troubleshooting:** Set `COMFY_LOG_LEVEL=DEBUG` to get detailed logs when ComfyUI crashes or behaves unexpectedly. This helps identify the exact point of failure in your workflows.
 

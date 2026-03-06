@@ -3,6 +3,8 @@ import json
 import argparse
 import sys
 import time
+import base64
+import os
 
 def test_endpoint(endpoint_url, api_key, payload_file):
     headers = {
@@ -28,7 +30,9 @@ def test_endpoint(endpoint_url, api_key, payload_file):
          response = requests.post(endpoint_url, headers=headers, json=payload, timeout=600)
          print(f"Status Code: {response.status_code}")
          print("Response:")
-         print(json.dumps(response.json(), indent=2))
+         data = response.json()
+         print(json.dumps(data, indent=2))
+         save_output_image(data.get("output"), "runsync_output.png")
     else:
         # Async run
         response = requests.post(endpoint_url, headers=headers, json=payload, timeout=30)
@@ -53,13 +57,36 @@ def test_endpoint(endpoint_url, api_key, payload_file):
             if status == "COMPLETED":
                 print("Job Completed!")
                 print("Output:")
-                print(json.dumps(status_data.get("output"), indent=2))
+                output = status_data.get("output")
+                print(json.dumps(output, indent=2))
+                save_output_image(output, "run_output.png")
                 break
             elif status == "FAILED":
                 print("Job Failed.")
                 print("Error:")
                 print(status_data.get("error"))
                 break
+
+def save_output_image(output, output_filename):
+    if not isinstance(output, dict):
+        print("No structured output object returned; skipping image decode.")
+        return
+
+    image_b64 = output.get("image")
+    if not image_b64:
+        print("No 'image' key found in output; skipping image decode.")
+        return
+
+    try:
+        image_bytes = base64.b64decode(image_b64, validate=True)
+    except Exception as exc:
+        print(f"Failed to decode output.image as base64: {exc}")
+        return
+
+    with open(output_filename, "wb") as file:
+        file.write(image_bytes)
+
+    print(f"Decoded output image saved to: {os.path.abspath(output_filename)}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test RunPod Endpoint")

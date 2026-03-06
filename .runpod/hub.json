@@ -1,13 +1,13 @@
 {
-  "title": "ComfyUI",
-  "description": "Generate images with ComfyUI using FLUX.1-dev (fp8)",
+  "title": "Wan 2.2 I2V Remix",
+  "description": "RunPod serverless endpoint for Wan 2.2 I2V Remix with image-only output",
   "type": "serverless",
   "category": "image",
   "iconUrl": "https://cpjrphpz3t5wbwfe.public.blob.vercel-storage.com/comfyui-logo-zpFUpCZoYMn5L0Ea9hfYOKX6F9gYqx.png",
   "config": {
     "runsOn": "GPU",
-    "containerDiskInGb": 20,
-    "gpuIds": "ADA_24",
+    "containerDiskInGb": 40,
+    "gpuIds": "H100",
     "gpuCount": 1,
     "allowedCudaVersions": ["12.7", "12.6"],
     "env": [
@@ -18,6 +18,24 @@
           "type": "boolean",
           "description": "When enabled, the worker will stop after each finished job to have a clean state",
           "default": false
+        }
+      },
+      {
+        "key": "COMFY_POLLING_MAX_RETRIES",
+        "input": {
+          "name": "Comfy Polling Max Retries",
+          "type": "string",
+          "description": "Maximum polling retries while waiting for ComfyUI completion",
+          "default": "2000"
+        }
+      },
+      {
+        "key": "COMFY_POLLING_INTERVAL_MS",
+        "input": {
+          "name": "Comfy Polling Interval (ms)",
+          "type": "string",
+          "description": "Polling interval in milliseconds while waiting for ComfyUI completion",
+          "default": "500"
         }
       }
     ]
