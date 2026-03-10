@@ -1,0 +1,41 @@
+# Docs and guides (not needed in image)
+doc/
+docs/
+*.md
+!README.md
+
+# Tests and CI (not needed at runtime)
+tests/
+.github/
+*.postman*.json
+postman_example.json
+new api.json
+wan_api_postman.json
+test_input.json
+test_runpod.py
+
+# Git and IDE
+.git/
+.gitignore
+.cursor/
+.vscode/
+.idea/
+
+# RunPod config (used by RunPod at deploy time, not inside container)
+.runpod/
+
+# Local / dev
+.env
+.env.*
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Assets / screenshots (optional; remove if you need them in the image)
+assets/
+
+# Misc
+.DS_Store
+*.log

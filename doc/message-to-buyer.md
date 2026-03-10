@@ -1,44 +1,47 @@
-# Message to Send to the Buyer (RunPod Team Owner)
+# Message to Send to the Buyer (After Repo Update – Network Volume)
 
-Use the text below when asking the buyer to enable GitHub deployment or adjust permissions. Based on [RunPod’s official docs](https://docs.runpod.io/get-started/manage-accounts) and [GitHub integration](https://docs.runpod.io/serverless/github-integration).
-
----
-
-**Subject:** RunPod deployment – need team owner action for GitHub link
+Use the text below when sending the buyer the updated repo and deployment steps.
 
 ---
 
-Hi,
+**Subject:** Repo updated – here’s how to deploy and test (Network Volume setup)
 
-To deploy the Wan 2.2 I2V Remix serverless endpoint from the repo we’re using, RunPod needs a **GitHub account linked** to your RunPod account. In the RunPod console, when creating a new serverless endpoint, it shows:
+---
 
-**“Team owner required. Only the owner of the team can link a GitHub account.”**
+Hello my friend,
 
-So only the **team owner** (the person who created or owns the RunPod team) can connect GitHub and use “Import GitHub Repository” for deployment.
+I’ve updated the repo to fix the build timeout issue. The build was failing because the image was too large and hit the 30‑minute limit. Models are now loaded from a **RunPod Network Volume** instead of being baked into the image, so the build finishes in about 10–15 minutes and stays under the limit.
 
-**Could you do one of the following?**
+**Here’s what you need to do to test:**
 
-**Option A – You link GitHub and deploy (simplest)**  
-1. In RunPod go to **Account → Settings** → **Connections**: https://www.console.runpod.io/user/settings  
-2. Under Connections, click **Connect** for GitHub and authorize RunPod (choose the repo or “All repositories” as you prefer).  
-3. Then go to **Manage → Serverless** → **New Endpoint** → **Import GitHub Repository**, select our repo, set Dockerfile path to `Dockerfile`, choose **H100 SXM** (80 GB), add the env vars from the project’s deploy guide, and deploy.  
-4. After the first build finishes, share the **Endpoint ID** and an **API key** (from RunPod Settings) so I can run and verify the tests.
+1. **Pull the latest code** from the repo (main branch or the branch I told you).
 
-**Option B – Give me permissions to link GitHub**  
-If RunPod lets you change who can link GitHub:  
-1. Go to **Account → Team**: https://www.console.runpod.io/team  
-2. Find my user and change my role to **Admin** (or whatever role RunPod allows to “modify team account settings” / link GitHub—see their roles table: https://docs.runpod.io/get-started/manage-accounts#roles-and-permissions).  
-3. If linking GitHub is still restricted to “team owner” only, then Option A is the way to go.
+2. **Create and populate a Network Volume (one-time):**
+   - In RunPod go to **Storage** → **Create Network Volume** (50 GB or more, pick a datacenter like US-KS-2).
+   - Deploy a **temporary Pod** (Pods → Deploy) with that volume attached at `/workspace`, any GPU or CPU template.
+   - In the Pod’s terminal run:
+     ```bash
+     apt-get update && apt-get install -y curl git
+     git clone https://github.com/YOUR_ORG/YOUR_REPO.git /tmp/repo
+     chmod +x /tmp/repo/scripts/populate_volume.sh
+     /tmp/repo/scripts/populate_volume.sh /workspace
+     ```
+     (Replace YOUR_ORG/YOUR_REPO with the actual repo URL.)  
+     This downloads all models onto the volume and can take 30–60 minutes. When it’s done, you can stop/delete the Pod; the volume keeps the data.
 
-Official references:  
-- Team roles and permissions: https://docs.runpod.io/get-started/manage-accounts  
-- Deploy from GitHub: https://docs.runpod.io/serverless/github-integration  
+3. **Create the Serverless endpoint** (or use an existing one):
+   - **Manage** → **Serverless** → **New Endpoint** → **Import GitHub Repository**, select the repo, branch, Dockerfile path `Dockerfile`.
+   - In **Advanced**, attach the **same Network Volume** you just populated.
+   - Set GPU to **H100 SXM** (80 GB), container disk ≥ 40 GB, and add env vars: `COMFY_HOST=127.0.0.1:8188`, `COMFY_POLLING_MAX_RETRIES=2000`, `COMFY_POLLING_INTERVAL_MS=500`.
+   - Deploy. The build should complete in ~10–15 min.
 
-Once the endpoint is deployed (or I have the right permissions), I’ll run the tests and confirm everything works.
+4. **Test the endpoint** with Postman or curl (see the guide in the repo). Send a `POST` to `https://api.runpod.ai/v2/YOUR_ENDPOINT_ID/run` with your API key and a JSON body with `start_image` and `end_image` (base64), then poll `.../status/JOB_ID` until you get `output.image`.
+
+All the details (including the exact request body and checklist) are in the repo: **doc/buyer-deploy-and-test-guide.md**. If anything is unclear or you hit an error, send me the build log or the API response (with the API key redacted) and I’ll help you fix it.
 
 Thanks,  
 [Your name]
 
 ---
 
-*You can copy the body above and paste it into Fiverr (or your platform) messages. Adjust “our repo” / “the repo” if you refer to it by name or link.*
+*You can copy the body above and paste it into Fiverr (or your platform) messages. Replace YOUR_ORG/YOUR_REPO and [Your name] as needed.*
